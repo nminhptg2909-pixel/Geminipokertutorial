@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Range Viewer (100BB)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #1a1a1c;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+        }
+        .header {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        /* Grid Styles */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(13, 1fr);
+            gap: 2px;
+            width: 100%;
+            max-width: 500px;
+            background-color: #222;
+            padding: 2px;
+            border-radius: 6px;
+        }
+        .cell {
+            aspect-ratio: 1 / 1;
+            background-color: #6c6d71; /* Màu xám mặc định */
+            color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(8px, 2.5vw, 14px);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 2px;
+            user-select: none;
+            transition: background-color 0.1s;
+        }
+        .cell.active {
+            background-color: #ff5722; /* Màu cam đỏ khi được chọn */
+            color: white;
+        }
+        
+        /* Stats Styles */
+        .stats {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        /* Poker Table Styles */
+        .table-area {
+            margin-top: 40px;
+            position: relative;
+            width: 320px;
+            height: 160px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .poker-table {
+            width: 260px;
+            height: 120px;
+            background-color: #2e7d32; /* Màu xanh lá bàn poker */
+            border: 8px solid #6d4c41; /* Viền gỗ */
+            border-radius: 130px / 60px;
+            position: relative;
+        }
+        
+        /* Position Buttons */
+        .pos-btn {
+            position: absolute;
+            background-color: white;
+            color: #007aff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        .pos-btn.active {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        /* Căn chỉnh vị trí các nút quanh bàn */
+        #btn-BTN { top: -15px; left: 50%; transform: translateX(-50%); }
+        #btn-SB  { top: 5px; right: -10px; }
+        #btn-BB  { bottom: 30px; right: -30px; }
+        #btn-UTG { bottom: -15px; right: 20px; }
+        #btn-MP  { bottom: -15px; left: 20px; }
+        #btn-HJ  { bottom: 30px; left: -30px; }
+        #btn-CO  { top: 5px; left: -10px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">☕ 100BB Range Viewer</div>
+        <div class="header-title">⚙️</div>
+    </div>
+
+    <div class="grid-container" id="handGrid"></div>
+
+    <div class="stats">
+        <div id="percentage">0%</div>
+        <div id="handCount">0 combos</div>
+    </div>
+
+    <div class="table-area">
+        <div class="poker-table"></div>
+        <button class="pos-btn" id="btn-BTN" onclick="selectPosition('BTN')">Button</button>
+        <button class="pos-btn" id="btn-SB" onclick="selectPosition('SB')">SB</button>
+        <button class="pos-btn" id="btn-BB" onclick="selectPosition('BB')">BB</button>
+        <button class="pos-btn" id="btn-UTG" onclick="selectPosition('UTG')">UTG</button>
+        <button class="pos-btn" id="btn-MP" onclick="selectPosition('MP')">MP</button>
+        <button class="pos-btn" id="btn-HJ" onclick="selectPosition('HJ')">Hijack</button>
+        <button class="pos-btn" id="btn-CO" onclick="selectPosition('CO')">Cutoff</button>
+    </div>
+
+    <script>
+        const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        const grid = document.getElementById('handGrid');
+        const percentageText = document.getElementById('percentage');
+        const handCountText = document.getElementById('handCount');
+
+        // Tạo 169 ô của bảng
+        for (let i = 0; i < ranks.length; i++) {
+            for (let j = 0; j < ranks.length; j++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                let handId = '';
+                if (i === j) {
+                    handId = ranks[i] + ranks[j]; // Đôi (Ví dụ: AA)
+                } else if (i < j) {
+                    handId = ranks[i] + ranks[j] + 's'; // Đồng chất (Ví dụ: AKs)
+                } else {
+                    handId = ranks[j] + ranks[i] + 'o'; // Không đồng chất (Ví dụ: AKo)
+                }
+                
+                cell.id = handId;
+                cell.innerText = handId;
+                grid.appendChild(cell);
+            }
+        }
+
+        // Định nghĩa Range dựa trên sổ tay ghi chú của mày
+        const ranges = {
+            'UTG': "77+, ATs+, KJs+, QJs, JTs, AJo+, KQo",
+            'MP':  "55+, A9s+, KTs+, QTs+, JTs, T9s, ATo+, KQo",
+            'HJ':  "22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, ATo+, KQo, KJo, QJo",
+            'CO':  "22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 98s, 87s, 76s, 65s, A9o+, KTo+, QTo+, JTo",
+            'BTN': "22+, A2s+, K2s+, Q2s+, J5s+, T6s+, 95s+, 85s+, 75s+, 65s, 54s, A2o+, K9o+, Q9o+, J9o+, T9o",
+            'SB':  "22+, A2s+, K5s+, Q7s+, J7s+, T7s+, 97s+, 87s+, 76s+, 65s, 54s, A7o+, KTo+, QTo+, JTo",
+            'BB':  "22+, A2s+, K2s+, Q2s+, J2s+, T2s+, 95s+, 85s+, 74s+, 64s+, 53s+, 43s, A2o+, K5o+, Q8o+, J8o+, T8o+, 98o+"
+        };
+
+        // Hàm giải mã chuỗi Range thành danh sách các Hand cụ thể
+        function parseRange(rangeStr) {
+            let hands = new Set();
+            let tokens = rangeStr.split(',').map(s => s.trim());
+            
+            for (let token of tokens) {
+                if (token.includes('+')) {
+                    let base = token.replace('+', '');
+                    let suffix = base.length === 3 ? base[2] : '';
+                    if (base[0] === base[1]) { // Đôi (VD: 77+)
+                        let idxEnd = ranks.indexOf(base[0]);
+                        for (let i = 0; i <= idxEnd; i++) hands.add(ranks[i] + ranks[i]);
+                    } else { // Suited/Offsuit (VD: ATs+)
+                        let r1 = base[0];
+                        let idxEnd = ranks.indexOf(base[1]);
+                        let idxStart = ranks.indexOf(r1) + 1; // Quân bài cao nhất liền kề r1
+                        for (let i = idxStart; i <= idxEnd; i++) hands.add(r1 + ranks[i] + suffix);
+                    }
+                } else {
+                    hands.add(token); // Single hand (VD: 65s)
+                }
+            }
+            return Array.from(hands);
+        }
+
+        // Cập nhật giao diện khi chọn vị trí
+        function selectPosition(pos) {
+            // Đổi màu nút
+            document.querySelectorAll('.pos-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + pos).classList.add('active');
+
+            // Reset bảng
+            document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('active'));
+
+            // Áp dụng Range
+            let activeHands = parseRange(ranges[pos]);
+            let totalCombos = 0;
+            let squareCount = 0;
+
+            activeHands.forEach(hand => {
+                let el = document.getElementById(hand);
+                if (el) {
+                    el.classList.add('active');
+                    squareCount++;
+                    // Tính toán Combo thực tế
+                    if (hand.length === 2) totalCombos += 6; // Đôi có 6 combo
+                    else if (hand.includes('s')) totalCombos += 4; // Đồng chất có 4 combo
+                    else if (hand.includes('o')) totalCombos += 12; // Khác chất có 12 combo
+                }
+            });
+
+            // Cập nhật thông số % (Dựa trên tổng 1326 combo để có số chính xác nhất)
+            let percentage = ((totalCombos / 1326) * 100).toFixed(1);
+            percentageText.innerText = `${percentage}%`;
+            handCountText.innerText = `${squareCount} hands (${totalCombos} combos)`;
+        }
+
+        // Chọn Button làm mặc định khi mới mở
+        selectPosition('BTN');
+    </script>
+</body>
+</html>
