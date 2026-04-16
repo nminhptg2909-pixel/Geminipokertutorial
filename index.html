@@ -5,170 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poker Range Master (100BB)</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        body {
-            background-color: #121212;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 10px;
-        }
-        .header {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .header-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #f39c12;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        body { background-color: #121212; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; }
+        .header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-title { font-size: 1.2rem; font-weight: bold; color: #f39c12; }
         
-        /* Legend Styles (Chú thích màu) */
-        .legend {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            justify-content: flex-start;
-            gap: 15px;
-            margin-bottom: 15px;
-            font-size: 0.85rem;
-            color: #bbb;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .color-box {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
-        }
+        /* Toggle Switch */
+        .toggle-container { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; background: #1e1e1e; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        .toggle-label { font-size: 0.9rem; font-weight: 600; color: #777; transition: 0.3s; }
+        .toggle-label.active { color: #f39c12; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2ecc71; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Legend */
+        .legend { width: 100%; max-width: 500px; display: flex; justify-content: flex-start; gap: 15px; margin-bottom: 15px; font-size: 0.85rem; color: #bbb; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .color-box { width: 14px; height: 14px; border-radius: 3px; }
         .bg-raise { background-color: #e74c3c; }
         .bg-call  { background-color: #2ecc71; }
-        .bg-fold  { background-color: #555555; }
+        .bg-fold  { background-color: #333; border: 1px solid #444; }
 
-        /* Grid Styles */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(13, 1fr);
-            gap: 2px;
-            width: 100%;
-            max-width: 500px;
-            background-color: #222;
-            padding: 3px;
-            border-radius: 6px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        .cell {
-            aspect-ratio: 1 / 1;
-            background-color: #444; /* Màu xám mặc định (Fold) */
-            color: #999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: clamp(8px, 2.5vw, 13px);
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 2px;
-            user-select: none;
-            transition: all 0.2s;
-        }
-        /* Đổi màu theo hành động */
-        .cell.raise {
-            background-color: #e74c3c; /* Đỏ - Raise */
-            color: white;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
-        }
-        .cell.call {
-            background-color: #2ecc71; /* Xanh - Call / Limp */
-            color: #111;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
-        }
+        /* Grid */
+        .grid-container { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; width: 100%; max-width: 500px; background-color: #222; padding: 3px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .cell { aspect-ratio: 1 / 1; background-color: #333; color: #666; display: flex; justify-content: center; align-items: center; font-size: clamp(8px, 2.5vw, 13px); font-weight: 600; cursor: pointer; border-radius: 2px; user-select: none; transition: all 0.2s; }
+        .cell.raise { background-color: #e74c3c; color: white; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+        .cell.call { background-color: #2ecc71; color: #111; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
 
-        /* Note Box Styles */
-        .note-box {
-            width: 100%;
-            max-width: 500px;
-            background-color: #1e1e1e;
-            border-left: 4px solid #f39c12;
-            padding: 12px 15px;
-            margin-top: 15px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: #ddd;
-        }
-        .note-box b {
-            color: #f39c12;
-        }
+        /* Note & Stats */
+        .note-box { width: 100%; max-width: 500px; background-color: #1e1e1e; border-left: 4px solid #f39c12; padding: 12px 15px; margin-top: 15px; border-radius: 4px; font-size: 0.9rem; line-height: 1.5; color: #ddd; }
+        .note-box b { color: #f39c12; }
+        .stats { width: 100%; max-width: 500px; display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.85rem; color: #888; }
 
-        /* Stats Styles */
-        .stats {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 0.85rem;
-            color: #888;
-        }
-
-        /* Poker Table Styles */
-        .table-area {
-            margin-top: 30px;
-            position: relative;
-            width: 320px;
-            height: 180px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .poker-table {
-            width: 250px;
-            height: 110px;
-            background-color: #1b5e20;
-            border: 8px solid #4e342e;
-            border-radius: 125px / 55px;
-            position: relative;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        }
+        /* Poker Table */
+        .table-area { margin-top: 30px; position: relative; width: 320px; height: 180px; display: flex; justify-content: center; align-items: center; }
+        .poker-table { width: 250px; height: 110px; background-color: #1b5e20; border: 8px solid #4e342e; border-radius: 125px / 55px; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .pos-btn { position: absolute; background-color: #333; color: #aaa; border: 2px solid #555; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; z-index: 10; }
+        .pos-btn.active { background-color: #f39c12; color: #111; border-color: #f39c12; box-shadow: 0 0 10px rgba(243, 156, 18, 0.5); }
         
-        .pos-btn {
-            position: absolute;
-            background-color: #333;
-            color: #aaa;
-            border: 2px solid #555;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            z-index: 10;
-        }
-        .pos-btn:hover {
-            border-color: #f39c12;
-            color: white;
-        }
-        .pos-btn.active {
-            background-color: #f39c12;
-            color: #111;
-            border-color: #f39c12;
-            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
-        }
-        
-        /* Căn chỉnh vị trí */
         #btn-BTN { top: 0px; left: 50%; transform: translateX(-50%); }
         #btn-SB  { top: 15px; right: 0px; }
         #btn-BB  { bottom: 45px; right: -20px; }
@@ -176,19 +53,27 @@
         #btn-MP  { bottom: 0px; left: 30px; }
         #btn-HJ  { bottom: 45px; left: -20px; }
         #btn-CO  { top: 15px; left: 0px; }
-
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="header-title">♠️ 100BB GTO Ranges</div>
+        <div class="header-title">♠️ Hệ Thống Chiến Thuật Poker</div>
+    </div>
+
+    <div class="toggle-container">
+        <span id="label-firstin" class="toggle-label active">Chưa ai vào Pot</span>
+        <label class="switch">
+            <input type="checkbox" id="modeToggle" onchange="toggleMode()">
+            <span class="slider"></span>
+        </label>
+        <span id="label-facing" class="toggle-label">Có người Raise</span>
     </div>
 
     <div class="legend">
-        <div class="legend-item"><div class="color-box bg-raise"></div> Raise / 3-Bet</div>
-        <div class="legend-item"><div class="color-box bg-call"></div> Call / Check</div>
-        <div class="legend-item"><div class="color-box bg-fold"></div> Fold</div>
+        <div class="legend-item"><div class="color-box bg-raise"></div> Đỏ: Raise / 3-Bet</div>
+        <div class="legend-item"><div class="color-box bg-call"></div> Xanh: Call / Theo</div>
+        <div class="legend-item"><div class="color-box bg-fold"></div> Xám: Fold bỏ ngay</div>
     </div>
 
     <div class="grid-container" id="handGrid"></div>
@@ -198,9 +83,7 @@
         <div id="handCount">0 combos</div>
     </div>
 
-    <div class="note-box" id="strategyNote">
-        Đang tải chiến thuật...
-    </div>
+    <div class="note-box" id="strategyNote">Đang tải chiến thuật...</div>
 
     <div class="table-area">
         <div class="poker-table"></div>
@@ -216,71 +99,46 @@
     <script>
         const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
         const grid = document.getElementById('handGrid');
-        const percentageText = document.getElementById('percentage');
-        const handCountText = document.getElementById('handCount');
-        const noteBox = document.getElementById('strategyNote');
+        let currentPos = 'BTN';
+        let isFacingRaise = false;
 
-        // Khởi tạo bảng Grid
         for (let i = 0; i < ranks.length; i++) {
             for (let j = 0; j < ranks.length; j++) {
                 let cell = document.createElement('div');
                 cell.className = 'cell';
-                let handId = '';
-                if (i === j) handId = ranks[i] + ranks[j]; 
-                else if (i < j) handId = ranks[i] + ranks[j] + 's';
-                else handId = ranks[j] + ranks[i] + 'o'; 
-                
+                let handId = i === j ? ranks[i] + ranks[j] : (i < j ? ranks[i] + ranks[j] + 's' : ranks[j] + ranks[i] + 'o');
                 cell.id = handId;
                 cell.innerText = handId;
                 grid.appendChild(cell);
             }
         }
 
-        // Database Chiến thuật (Raise màu đỏ, Call màu xanh)
-        const positionData = {
-            'UTG': {
-                raise: "77+, ATs+, KJs+, QJs, JTs, AJo+, KQo",
-                call: "",
-                note: "<b>🚨 TUYỆT ĐỐI KHÔNG LIMP:</b> Ở vị trí này 1 là <b>Raise</b>, 2 là <b>Fold</b>. Đừng biến mình thành cá. Nếu gặp 3-Bet: 4-Bet với AA, KK, AKs và Call với JJ, TT, AQs."
-            },
-            'MP': {
-                raise: "55+, A9s+, KTs+, QTs+, JTs, T9s, ATo+, KQo",
-                call: "",
-                note: "<b>🚨 CHỈ RAISE HOẶC FOLD:</b> Tuyệt đối không Limp. Cẩn thận bẫy Kicker: các hand Offsuit có Kicker từ 10 trở xuống là máy bào tiền."
-            },
-            'HJ': {
-                raise: "22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, ATo+, KQo, KJo, QJo",
-                call: "",
-                note: "<b>⚔️ KẺ ĐI SĂN:</b> 1 là <b>Raise</b>, 2 là <b>Fold</b>. Nếu có người Limp trước mặt, hãy Raise Isolate thật lớn (~100-120 chip) để cô lập họ."
-            },
-            'CO': {
-                raise: "22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 98s, 87s, 76s, 65s, A9o+, KTo+, QTo+, JTo",
-                call: "",
-                note: "<b>🎯 SÁT THỦ:</b> Mục tiêu là đuổi Button để giành quyền hành động cuối cùng. <b>Chỉ Raise hoặc Fold</b>, không bao giờ Limp!"
-            },
-            'BTN': {
-                raise: "22+, A2s+, K2s+, Q2s+, J5s+, T6s+, 95s+, 85s+, 75s+, 65s, 54s, A2o+, K9o+, Q9o+, J9o+, T9o",
-                call: "",
-                note: "<b>👑 ÔNG CHỦ:</b> Cướp tiền mù tối đa! <b>Chỉ Raise hoặc Fold</b>. Dù có quyền lực nhưng nhớ phải quăng 50% bài rác (như 72o, K8o-, Q8o-)."
-            },
-            'SB': {
-                raise: "22+, A2s+, K5s+, Q7s+, J7s+, T7s+, 97s+, 87s+, 76s+, 65s, 54s, A7o+, KTo+, QTo+, JTo",
-                call: "",
-                note: "<b>🛡️ KỶ LUẬT SẮT:</b> Nếu Open thì Raise 3x BB. <b>Nếu có người Raise trước: 3-BET HOẶC FOLD</b> (Tuyệt đối không Call ngang/Limp). Đừng tiếc 0.5 BB lẻ."
-            },
-            'BB': {
-                raise: "JJ+, AQs+, AQo+",
-                call: "22-TT, A2s-AJs, K2s-KQs, Q2s-QJs, J2s-JTs, T2s-T9s, 98s, 87s, 76s, 65s, 54s, A2o-AJo, KTo-KQo, QTo-QJo, JTo",
-                note: "<b>🏰 BẢO VỆ LÃNH THỔ:</b> <br>- <b>Nếu cả bàn Limp:</b> LIMP (Check) theo để xem Flop miễn phí.<br>- <b>Nếu bị Raise:</b> Call rộng để Defend, và 3-Bet với hàng khủng (JJ+, AQ+)."
-            }
+        // DATABASE 1: KHI CHƯA AI VÀO POT (First-in) - TUYỆT ĐỐI KHÔNG LIMP
+        const firstInData = {
+            'UTG': { raise: "77+, ATs+, KJs+, QJs, JTs, AJo+, KQo", call: "", note: "<b>🚨 TUYỆT ĐỐI KHÔNG LIMP:</b> Đầu bàn, 1 là Raise, 2 là Fold. Đừng biến mình thành cá." },
+            'MP': { raise: "55+, A9s+, KTs+, QTs+, JTs, T9s, ATo+, KQo", call: "", note: "<b>🚨 CHỈ RAISE HOẶC FOLD:</b> Cẩn thận bẫy Kicker Offsuit từ 10 trở xuống." },
+            'HJ': { raise: "22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, ATo+, KQo, KJo, QJo", call: "", note: "<b>⚔️ KẺ ĐI SĂN:</b> Bắt đầu mở rộng nan quạt. Isolate mạnh nếu có người Limp trước." },
+            'CO': { raise: "22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 98s, 87s, 76s, 65s, A9o+, KTo+, QTo+, JTo", call: "", note: "<b>🎯 SÁT THỦ:</b> Mục tiêu đuổi Button để giành quyền hành động cuối cùng. Không Limp!" },
+            'BTN': { raise: "22+, A2s+, K2s+, Q2s+, J5s+, T6s+, 95s+, 85s+, 75s+, 65s, 54s, A2o+, K9o+, Q9o+, J9o+, T9o", call: "", note: "<b>👑 ÔNG CHỦ:</b> Cướp tiền mù tối đa! Chỉ Raise/Fold. Nhớ vứt 50% bài rác (72o, K8o-)." },
+            'SB': { raise: "22+, A2s+, K5s+, Q7s+, J7s+, T7s+, 97s+, 87s+, 76s+, 65s, 54s, A7o+, KTo+, QTo+, JTo", call: "", note: "<b>🛡️ KỶ LUẬT SẮT SB:</b> Raise thẳng 3x BB để triệt lợi thế vị trí của BB. Thà mất 0.5 BB còn hơn mất 50 BB." },
+            'BB': { raise: "JJ+, AQs+, AQo+", call: "22-TT, A2s-AJs, K2s-KQs, Q2s-QJs, J2s-JTs, T2s-T9s, 98s, 87s, 76s, 65s, 54s, A2o-AJo, KTo-KQo, QTo-QJo, JTo", note: "<b>🏰 BẢO VỆ NGÔI VƯƠNG:</b> Cả bàn Limp thì mày cứ CHECK xem Flop miễn phí. Bị cướp mù thì Call rộng để phòng ngự." }
         };
 
-        // Hàm phân tích chuỗi Range thông minh (Xử lý được dấu + và dấu -)
+        // DATABASE 2: KHI CÓ NGƯỜI RAISE TRƯỚC (Facing Raise) - CÓ MÀU XANH ĐỂ CALL
+        const facingRaiseData = {
+            'UTG': { raise: "KK+, AA, AKs", call: "JJ, TT, AQs", note: "<b>🔥 ĐỐI ĐẦU 3-BET:</b> Chơi cực chặt. 4-Bet dằn mặt với AA, KK, AKs. Call dò mìn với JJ, TT, AQs." },
+            'MP': { raise: "QQ+, AKs, AKo", call: "JJ, TT, 99, AQs, KQs", note: "<b>🔥 BỊ RAISE TRƯỚC:</b> Quăng hết rác. 3-Bet lấy Value với hàng siêu cấp. Call rình Set (Bộ ba) với các đôi vừa." },
+            'HJ': { raise: "JJ+, AKs, AKo", call: "77-TT, AQs, KQs, JTs, T9s", note: "<b>🔥 TRANH GIÀNH POT:</b> Đừng Call rác. 3-Bet cô lập hoặc Call rình Set/Sảnh với Suited Connectors xịn." },
+            'CO': { raise: "JJ+, AKs, AKo", call: "55-TT, AJs+, KQs, QJs, JTs, T9s, 98s", note: "<b>🔥 ĐÁNH TRẢ:</b> Mày có vị trí! 3-bet ép chết nó hoặc Call (Xanh) để dùng vị trí (IP) bòn rút nó sau Flop." },
+            'BTN': { raise: "JJ+, AKs, AKo", call: "22-TT, AJs+, KJs+, QJs, JTs, T9s, 98s, 87s, 76s", note: "<b>👑 CALL RỘNG:</b> Có vị trí tuyệt đối. Call (Xanh) rộng hơn để Set-mining. 3-Bet hàng khủng." },
+            'SB': { raise: "JJ+, AQs+, AKo", call: "", note: "<b>🛡️ QUY TẮC SỐNG CÒN CỦA SB:</b> Bị Raise trước thì chỉ có <b>3-BET (ĐỎ) HOẶC FOLD (XÁM)</b>. Tuyệt đối không Call ngang để tránh kẹp thịt. Bảng KHÔNG CÓ MÀU XANH." },
+            'BB': { raise: "JJ+, AQs+, AKo", call: "22-TT, A2s-AJs, K5s+, Q8s+, J8s+, T8s+, 98s, 87s, 76s, 65s, ATo-AJo, KTo+, QTo+, JTo", note: "<b>🏰 ĐƯỢC GIẢM GIÁ 1BB:</b> Hãy Call rộng (Xanh) để Defend với Axs, Kxs, đôi nhỏ, bài nối đồng chất." }
+        };
+
         function parseRange(rangeStr) {
             let hands = new Set();
             if(!rangeStr) return Array.from(hands);
             let tokens = rangeStr.split(',').map(s => s.trim());
-            
             for (let token of tokens) {
                 if (token.includes('+')) {
                     let base = token.replace('+', '');
@@ -289,78 +147,53 @@
                         let idxEnd = ranks.indexOf(base[0]); 
                         for (let i = 0; i <= idxEnd; i++) hands.add(ranks[i] + ranks[i]);
                     } else {
-                        let r1 = base[0];
-                        let idxEnd = ranks.indexOf(base[1]);
-                        let idxStart = ranks.indexOf(r1) + 1;
+                        let r1 = base[0], idxEnd = ranks.indexOf(base[1]), idxStart = ranks.indexOf(r1) + 1;
                         for (let i = idxStart; i <= idxEnd; i++) hands.add(r1 + ranks[i] + suffix);
                     }
                 } else if (token.includes('-')) {
-                    let parts = token.split('-');
-                    let start = parts[0], end = parts[1];
+                    let parts = token.split('-'), start = parts[0], end = parts[1];
                     let suffix = start.length === 3 ? start[2] : '';
                     if (start[0] === start[1]) {
                         let idxStart = ranks.indexOf(end[0]), idxEnd = ranks.indexOf(start[0]);
                         for(let i = idxStart; i <= idxEnd; i++) hands.add(ranks[i] + ranks[i]);
                     } else {
-                        let r1 = start[0];
-                        let idxStart = ranks.indexOf(end[1]), idxEnd = ranks.indexOf(start[1]);
+                        let r1 = start[0], idxStart = ranks.indexOf(end[1]), idxEnd = ranks.indexOf(start[1]);
                         for(let i = idxStart; i <= idxEnd; i++) hands.add(r1 + ranks[i] + suffix);
                     }
-                } else {
-                    hands.add(token);
-                }
+                } else { hands.add(token); }
             }
             return Array.from(hands);
         }
 
-        // Cập nhật giao diện
+        function toggleMode() {
+            isFacingRaise = document.getElementById('modeToggle').checked;
+            document.getElementById('label-firstin').classList.toggle('active', !isFacingRaise);
+            document.getElementById('label-facing').classList.toggle('active', isFacingRaise);
+            selectPosition(currentPos);
+        }
+
         function selectPosition(pos) {
+            currentPos = pos;
             document.querySelectorAll('.pos-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btn-' + pos).classList.add('active');
-            document.querySelectorAll('.cell').forEach(cell => {
-                cell.classList.remove('raise', 'call');
-            });
+            document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('raise', 'call'));
 
-            let data = positionData[pos];
-            let raiseHands = parseRange(data.raise);
-            let callHands = parseRange(data.call);
+            let data = isFacingRaise ? facingRaiseData[pos] : firstInData[pos];
+            let raiseHands = parseRange(data.raise), callHands = parseRange(data.call);
             let totalCombos = 0;
 
-            // Đổ màu Đỏ (Raise)
-            raiseHands.forEach(hand => {
-                let el = document.getElementById(hand);
-                if (el) {
-                    el.classList.add('raise');
-                    totalCombos += countCombos(hand);
-                }
-            });
+            raiseHands.forEach(hand => { let el = document.getElementById(hand); if (el) { el.classList.add('raise'); totalCombos += countCombos(hand); } });
+            callHands.forEach(hand => { let el = document.getElementById(hand); if (el) { el.classList.add('call'); totalCombos += countCombos(hand); } });
 
-            // Đổ màu Xanh (Call)
-            callHands.forEach(hand => {
-                let el = document.getElementById(hand);
-                if (el) {
-                    el.classList.add('call');
-                    totalCombos += countCombos(hand);
-                }
-            });
-
-            // Hiển thị ghi chú
-            noteBox.innerHTML = data.note;
-
-            // Tính %
-            let percentage = ((totalCombos / 1326) * 100).toFixed(1);
-            percentageText.innerText = `Chơi: ${percentage}% Hand`;
-            handCountText.innerText = `Tổng: ${totalCombos} combos`;
+            document.getElementById('strategyNote').innerHTML = data.note;
+            document.getElementById('percentage').innerText = `Chơi: ${((totalCombos / 1326) * 100).toFixed(1)}% Hand`;
+            document.getElementById('handCount').innerText = `Tổng: ${totalCombos} combos`;
         }
 
         function countCombos(hand) {
-            if (hand.length === 2) return 6; // Đôi
-            if (hand.includes('s')) return 4; // Đồng chất
-            if (hand.includes('o')) return 12; // Khác chất
-            return 0;
+            return hand.length === 2 ? 6 : (hand.includes('s') ? 4 : (hand.includes('o') ? 12 : 0));
         }
 
-        // Chọn Button làm mặc định
         selectPosition('BTN');
     </script>
 </body>
